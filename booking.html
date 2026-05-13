@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book time</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080810;
+      --surface: #0f0f1a;
+      --surface2: #16162a;
+      --border: #22223a;
+      --accent: #6e6bff;
+      --accent2: #a78bfa;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --success: #34d399;
+      --error: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(110,107,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    /* STEP INDICATOR */
+    .steps {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+
+    .step {
+      flex: 1;
+      padding: 16px 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      position: relative;
+      transition: color 0.2s;
+    }
+
+    .step.active {
+      color: var(--accent2);
+    }
+
+    .step.done {
+      color: var(--success);
+    }
+
+    .step::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .step.active::after {
+      transform: scaleX(1);
+    }
+
+    /* PANELS */
+    .panel {
+      display: none;
+      padding: 24px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* CALENDAR */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .cal-nav button {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .cal-nav button:hover {
+      background: var(--border);
+    }
+
+    .cal-month {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day-name {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 6px 0;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .cal-day:hover:not(.empty):not(.past) {
+      background: var(--surface2);
+      border-color: var(--border);
+    }
+
+    .cal-day.empty {
+      cursor: default;
+    }
+
+    .cal-day.past {
+      color: var(--muted);
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+
+    .cal-day.today {
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+
+    .cal-day.selected {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* TIME SLOTS */
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      margin-bottom: 20px;
+      padding: 0;
+      transition: color 0.15s;
+    }
+
+    .back-btn:hover { color: var(--text); }
+
+    .selected-date {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .slot {
+      padding: 12px 8px;
+      text-align: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: 'DM Mono', monospace;
+      transition: all 0.15s;
+    }
+
+    .slot:hover {
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+
+    .slot.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .slot.taken {
+      opacity: 0.3;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    .no-slots {
+      text-align: center;
+      color: var(--muted);
+      padding: 32px 0;
+      font-size: 14px;
+    }
+
+    /* FORM */
+    .form-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .form-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .booking-summary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: var(--accent2);
+      font-family: 'DM Mono', monospace;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      margin-bottom: 14px;
+      transition: border-color 0.15s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity 0.15s;
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* STATUS */
+    .status {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .status.show { display: block; }
+
+    .status.success {
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      color: var(--success);
+    }
+
+    .status.error {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: var(--error);
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 20px 0;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Book en time</h1>
+      <p>Velg dato og tidspunkt som passer deg</p>
+    </div>
+
+    <div class="card">
+      <div class="steps">
+        <div class="step active" id="step1">Velg dag</div>
+        <div class="step" id="step2">Velg tid</div>
+        <div class="step" id="step3">Detaljer</div>
+      </div>
+
+      <!-- PANEL 1: KALENDER -->
+      <div class="panel active" id="panel1">
+        <div class="cal-nav">
+          <button id="prevMonth">&#8249;</button>
+          <div class="cal-month" id="calMonth"></div>
+          <button id="nextMonth">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+      <!-- PANEL 2: TIDER -->
+      <div class="panel" id="panel2">
+        <button class="back-btn" id="backToCalBtn">&#8592; Tilbake</button>
+        <div class="selected-date" id="selectedDateTitle"></div>
+        <div id="slotsContainer"></div>
+        <div id="slotStatus" class="status"></div>
+        <div id="slotNextWrap" style="margin-top:16px;display:none;">
+          <button class="btn-primary" id="slotNextBtn">Fortsett</button>
+        </div>
+      </div>
+
+      <!-- PANEL 3: SKJEMA -->
+      <div class="panel" id="panel3">
+        <button class="back-btn" id="backToSlotsBtn">&#8592; Tilbake</button>
+        <div class="form-title">Fyll inn dine detaljer</div>
+        <div class="form-subtitle">Vi sender bekreftelse på e-post</div>
+        <div class="booking-summary" id="bookingSummary"></div>
+        <label for="nameInput">Navn</label>
+        <input id="nameInput" type="text" placeholder="Ditt navn" />
+        <label for="emailInput">E-post</label>
+        <input id="emailInput" type="email" placeholder="navn@epost.no" />
+        <label for="phoneInput">Mobilnummer</label>
+        <input id="phoneInput" type="tel" placeholder="+47 XXX XX XXX" />
+        <label for="commentInput">Kommentar (valgfritt)</label>
+        <input id="commentInput" type="text" placeholder="Beskriv kort hva det gjelder..." />
+        <button class="btn-primary" id="confirmBtn">Bekreft booking</button>
+        <div id="formStatus" class="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WEBHOOK_URL = "https://abbooking.no/webhook/booking-chat";
+
+    // Åpningstider
+    const OPEN_HOUR = 9;
+    const CLOSE_HOUR = 17;
+    const SLOT_MINUTES = 30;
+
+    let currentDate = new Date();
+    let selectedDate = null;
+    let selectedSlot = null;
+    let takenSlots = [];
+
+    const dayNames = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
+    const monthNames = ['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
+
+    function setStep(n) {
+      ['step1','step2','step3'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        el.className = 'step' + (i+1 === n ? ' active' : i+1 < n ? ' done' : '');
+      });
+      ['panel1','panel2','panel3'].forEach((id, i) => {
+        document.getElementById(id).className = 'panel' + (i+1 === n ? ' active' : '');
+      });
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const MAX_DATE = new Date(today.getFullYear(), today.getMonth() + 2, 0); // last day of month+2
+
+    function updateNavButtons() {
+      const prevBtn = document.getElementById('prevMonth');
+      const nextBtn = document.getElementById('nextMonth');
+      const isCurrentMonth = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth();
+      const isMaxMonth = currentDate.getFullYear() === MAX_DATE.getFullYear() && currentDate.getMonth() === MAX_DATE.getMonth();
+      prevBtn.disabled = isCurrentMonth;
+      prevBtn.style.opacity = isCurrentMonth ? '0.3' : '1';
+      prevBtn.style.cursor = isCurrentMonth ? 'not-allowed' : 'pointer';
+      nextBtn.disabled = isMaxMonth;
+      nextBtn.style.opacity = isMaxMonth ? '0.3' : '1';
+      nextBtn.style.cursor = isMaxMonth ? 'not-allowed' : 'pointer';
+    }
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      document.getElementById('calMonth').textContent = `${monthNames[month]} ${year}`;
+
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+
+      dayNames.forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'cal-day-name';
+        el.textContent = d;
+        grid.appendChild(el);
+      });
+
+      const firstDay = new Date(year, month, 1);
+      // Monday = 0
+      let startOffset = (firstDay.getDay() + 6) % 7;
+
+      for (let i = 0; i < startOffset; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day empty';
+        grid.appendChild(el);
+      }
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayCheck = new Date();
+      todayCheck.setHours(0,0,0,0);
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day';
+        el.textContent = d;
+
+        const thisDate = new Date(year, month, d);
+        thisDate.setHours(0,0,0,0);
+
+        if (thisDate < todayCheck || thisDate > MAX_DATE) {
+          el.classList.add('past');
+        } else if (thisDate.getTime() === todayCheck.getTime()) {
+          el.classList.add('today');
+        }
+
+        if (selectedDate && thisDate.getTime() === selectedDate.getTime()) {
+          el.classList.add('selected');
+        }
+
+        if (!el.classList.contains('past')) {
+          el.addEventListener('click', () => selectDate(thisDate));
+        }
+
+        grid.appendChild(el);
+      }
+      updateNavButtons();
+    }
+
+    function selectDate(date) {
+      selectedDate = date;
+      selectedSlot = null;
+      renderCalendar();
+      showSlots(date);
+    }
+
+    function pad(n) { return String(n).padStart(2,'0'); }
+
+    function formatDateNO(date) {
+      return date.toLocaleDateString('no-NO', { weekday:'long', day:'numeric', month:'long' });
+    }
+
+    function generateSlots() {
+      const slots = [];
+      let h = OPEN_HOUR, m = 0;
+      while (h < CLOSE_HOUR) {
+        slots.push(`${pad(h)}:${pad(m)}`);
+        m += SLOT_MINUTES;
+        if (m >= 60) { m -= 60; h++; }
+      }
+      return slots;
+    }
+
+    function showSlots(date) {
+      setStep(2);
+      const title = document.getElementById('selectedDateTitle');
+      title.textContent = formatDateNO(date).charAt(0).toUpperCase() + formatDateNO(date).slice(1);
+
+      const container = document.getElementById('slotsContainer');
+      const nextWrap = document.getElementById('slotNextWrap');
+      nextWrap.style.display = 'none';
+
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Laster ledige tider...</div>';
+
+      // Hent opptatte tider fra n8n
+      const dateStr = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+
+      fetch(`${WEBHOOK_URL}?action=get_slots&date=${dateStr}`)
+        .then(r => r.json())
+        .then(data => {
+          takenSlots = data.taken || [];
+          renderSlots();
+        })
+        .catch(() => {
+          // Hvis webhook ikke støtter GET, vis alle slots
+          takenSlots = [];
+          renderSlots();
+        });
+    }
+
+    function renderSlots() {
+      const container = document.getElementById('slotsContainer');
+      const slots = generateSlots();
+      container.innerHTML = '';
+
+      if (slots.length === 0) {
+        container.innerHTML = '<div class="no-slots">Ingen ledige tider denne dagen</div>';
+        return;
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'slots-grid';
+
+      slots.forEach(slot => {
+        const el = document.createElement('div');
+        el.className = 'slot';
+        el.textContent = slot;
+
+        const isTaken = takenSlots.includes(slot);
+        if (isTaken) {
+          el.classList.add('taken');
+          el.title = 'Opptatt';
+        } else {
+          el.addEventListener('click', () => selectSlot(slot, el));
+        }
+
+        grid.appendChild(el);
+      });
+
+      container.appendChild(grid);
+    }
+
+    function selectSlot(slot, el) {
+      selectedSlot = slot;
+      document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('slotNextWrap').style.display = 'block';
+    }
+
+    document.getElementById('slotNextBtn').addEventListener('click', () => {
+      if (!selectedSlot) return;
+      showForm();
+    });
+
+    function showForm() {
+      setStep(3);
+      const dateStr = formatDateNO(selectedDate);
+      document.getElementById('bookingSummary').textContent =
+        `📅 ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} kl. ${selectedSlot}`;
+    }
+
+    document.getElementById('confirmBtn').addEventListener('click', async () => {
+      const name = document.getElementById('nameInput').value.trim();
+      const email = document.getElementById('emailInput').value.trim();
+      const phone = document.getElementById('phoneInput').value.trim();
+      const comment = document.getElementById('commentInput').value.trim();
+      const statusBox = document.getElementById('formStatus');
+
+      if (!name || !email) {
+        statusBox.textContent = 'Fyll inn navn og e-post.';
+        statusBox.className = 'status show error';
+        return;
+      }
+
+      const btn = document.getElementById('confirmBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sender...';
+
+      const dateStr = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth()+1)}-${pad(selectedDate.getDate())}`;
+      const message = `Book time ${dateStr} kl ${selectedSlot}`;
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, message, name, comment, phone })
+        });
+
+        if (!response.ok) throw new Error();
+
+        statusBox.textContent = '✓ Booking sendt! Du får bekreftelse på e-post.';
+        statusBox.className = 'status show success';
+        btn.textContent = 'Sendt!';
+
+      } catch {
+        statusBox.textContent = 'Noe gikk galt. Prøv igjen.';
+        statusBox.className = 'status show error';
+        btn.disabled = false;
+        btn.textContent = 'Bekreft booking';
+      }
+    });
+
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      const isCurrentMonth = currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth();
+      if (isCurrentMonth) return;
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      const isMaxMonth = currentDate.getFullYear() === MAX_DATE.getFullYear() && currentDate.getMonth() === MAX_DATE.getMonth();
+      if (isMaxMonth) return;
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    document.getElementById('backToCalBtn').addEventListener('click', () => {
+      setStep(1);
+    });
+
+    document.getElementById('backToSlotsBtn').addEventListener('click', () => {
+      showSlots(selectedDate);
+    });
+
+    renderCalendar();
+  </script>
+</body>
+</html>
