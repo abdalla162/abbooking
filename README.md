@@ -4,11 +4,11 @@ An automated booking system built for Norwegian small businesses.
 The system handles booking, calendar sync, email confirmations, 
 and SMS reminders automatically.
 
-## 🔗 Live Demo
+## Live Demo
 - Website: https://abbooking.no
 - Booking: https://booking.abbooking.no
 
-## 🛠️ Tech Stack
+##  Tech Stack
 - n8n — Workflow automation
 - OpenAI GPT-4o-mini** — AI-powered booking assistant
 - Google Calendar API — Calendar sync
@@ -19,7 +19,7 @@ and SMS reminders automatically.
 - Let's Encrypt — SSL/HTTPS
 - HTML/CSS/JavaScript — Frontend
 
-## ✅ Features
+## Features
 - Calendar-based booking with available time slots
 - Real-time Google Calendar synchronization
 - Automatic email confirmation to customers
@@ -27,9 +27,16 @@ and SMS reminders automatically.
 - AI handles conflicting bookings and suggests alternatives
 - Professional landing page for sales
 
-## 🏗️ Architecture
+## Architecture
+Customer books via website
+→ n8n webhook receives request
+→ OpenAI extracts date/time
+→ Google Calendar checks availability
+→ Books slot or suggests alternative
+→ Email confirmation sent to customer
+→ SMS reminder sent day before
 
-## 📁 Files
+##  Files
 - `booking.html` — Booking interface
 - `index.html` — Sales landing page
 - `workflows/` — n8n workflow exports
